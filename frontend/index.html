@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predictive Server Autoscaling Dashboard</title>
+    <link rel="stylesheet" href="./src/styles/main.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1>🖥️ Predictive Server Autoscaling</h1>
+                <p class="subtitle">Real-time Traffic Forecasting & Auto-scaling System</p>
+            </div>
+            <div class="header-status">
+                <span id="connection-status" class="status-badge disconnected">Disconnected</span>
+                <span id="current-time" class="time-display">--:--:--</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Stats Cards -->
+            <section class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Current Requests</div>
+                        <div class="stat-value" id="current-requests">0</div>
+                        <div class="stat-change">requests/min</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">🔮</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Predicted (5M)</div>
+                        <div class="stat-value" id="predicted-requests">0</div>
+                        <div class="stat-change">requests/min</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">🖥️</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Active Servers</div>
+                        <div class="stat-value" id="active-servers">0</div>
+                        <div class="stat-action" id="scaling-action">--</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Utilization</div>
+                        <div class="stat-value" id="utilization">0%</div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill" id="utilization-bar"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Cost/Hour</div>
+                        <div class="stat-value" id="cost-hour">$0.00</div>
+                        <div class="stat-change" id="cost-change">--</div>
+                        <div class="cost-details" id="cost-details"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <!-- Traffic Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>📈 Traffic Load (Requests/minute)</h3>
+                        <div class="chart-controls">
+                            <select id="traffic-interval" class="chart-select">
+                                <option value="1m">1 minute</option>
+                                <option value="5m" selected>5 minutes</option>
+                                <option value="15m">15 minutes</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="traffic-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Servers Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>🖥️ Server Count Over Time</h3>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="servers-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Cost Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>💰 Cost Analysis</h3>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="cost-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Predictions Panel -->
+                <div class="chart-card predictions-panel">
+                    <div class="chart-header">
+                        <h3>🔮 Multi-Interval Predictions</h3>
+                        <button id="refresh-predictions" class="btn-refresh">🔄 Refresh</button>
+                    </div>
+                    <div class="chart-body">
+                        <div id="predictions-list" class="predictions-list">
+                            <div class="loading">Loading predictions...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scaling Events Log -->
+                <div class="chart-card events-panel">
+                    <div class="chart-header">
+                        <h3>⚡ Recent Scaling Events</h3>
+                        <button id="clear-events" class="btn-clear">Clear</button>
+                    </div>
+                    <div class="chart-body">
+                        <div id="events-log" class="events-log">
+                            <div class="no-events">No scaling events yet</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Info -->
+                <div class="chart-card info-panel">
+                    <div class="chart-header">
+                        <h3>ℹ️ System Information</h3>
+                    </div>
+                    <div class="chart-body">
+                        <div id="system-info" class="system-info">
+                            <div class="info-row">
+                                <span class="info-label">Min Servers:</span>
+                                <span class="info-value" id="info-min-servers">2</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Max Servers:</span>
+                                <span class="info-value" id="info-max-servers">50</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Scale-out Threshold:</span>
+                                <span class="info-value" id="info-scale-out">80%</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Scale-in Threshold:</span>
+                                <span class="info-value" id="info-scale-in">30%</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Target Utilization:</span>
+                                <span class="info-value" id="info-target">70%</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Requests/Server:</span>
+                                <span class="info-value" id="info-capacity">200</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="dashboard-footer">
+            <p>© 2026 Predictive Server Autoscaling | NASA Access Logs (August 1995)</p>
+        </footer>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
