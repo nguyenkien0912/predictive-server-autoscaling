@@ -1,720 +1,900 @@
-# 🖥️ Predictive Server Autoscaling System
+﻿#  Predictive Server Autoscaling System
 
 Hệ thống dự báo traffic và tự động điều chỉnh số lượng máy chủ (Autoscaling) sử dụng Machine Learning. Project này sử dụng dữ liệu NASA Web Server Access Logs (July-August 1995) để xây dựng mô hình dự báo và hệ thống autoscaling thông minh.
 
-## 📋 Giới thiệu
-
-Trong quản trị hệ thống đám mây, việc cấp phát tài nguyên cố định thường dẫn đến hai vấn đề:
-- **Lãng phí tài nguyên** khi ít người truy cập
-- **Sập hệ thống** khi lượng truy cập tăng đột biến
-
-Hệ thống này giải quyết vấn đề bằng cách:
-1. **Dự báo traffic** cho các khung thời gian 1, 5, 15 phút sử dụng XGBoost
-2. **Tự động điều chỉnh** số lượng server dựa trên dự báo
-3. **Tối ưu chi phí** vận hành hệ thống
-4. **Giám sát real-time** qua dashboard trực quan
-
-## 🏗️ Kiến trúc hệ thống
-
-```
-📁 predictive-server-autoscaling/
-├── 📁 backend/                          # Backend API (Python + FastAPI)
-│   ├── 📄 app.py                       # FastAPI application
-│   ├── 📄 requirements.txt             # Python dependencies
-│   ├── 📁 models/                      # Data models
-│   │   ├── 📄 request_models.py        # Request schemas
-│   │   ├── 📄 response_models.py       # Response schemas
-│   │   └── 📄 trained/                 # Trained ML models (optional)
-│   └── 📁 services/                    # Business logic
-│       ├── 📄 data_service.py          # Data management
-│       ├── 📄 prediction_service.py    # Traffic prediction
-│       └── 📄 autoscaling_service.py   # Scaling recommendations
-│
-├── 📁 frontend/                         # Frontend Dashboard (TypeScript)
-│   ├── 📄 index.html                   # Main HTML
-│   ├── 📄 package.json                 # Node.js dependencies
-│   ├── 📄 vite.config.ts               # Vite configuration
-│   └── 📁 src/                         # Source code
-│       ├── 📄 main.ts                  # Main application
-│       ├── 📄 api.ts                   # API service
-│       ├── 📄 charts.ts                # Chart management
-│       ├── 📄 types.ts                 # TypeScript types
-│       └── 📁 styles/
-│           └── 📄 main.css             # Styles
-│
-├── 📁 data/                             # Data files
-│   ├── 📄 access_log_Jul95.txt         # July logs (train)
-│   ├── 📄 access_log_Aug95.txt         # August logs (test)
-│   └── 📄 nasa_logs_processed.parquet  # Processed data
-│
-├── 📄 Final_Solution.ipynb              # Main notebook với models
-├── 📄 Data_Processing.ipynb             # Data preprocessing
-├── 📄 setup.bat                         # Windows setup script
-├── 📄 start-backend.bat                 # Start backend
-├── 📄 start-frontend.bat                # Start frontend
-└── 📄 README.md                         # Documentation
-
-```
-
-## 🚀 Hướng dẫn cài đặt và chạy
-
-### Yêu cầu hệ thống
-
-- **Python 3.8+** (khuyến nghị 3.10)
-- **Node.js 16+** (khuyến nghị 18+)
-- **pip** và **npm**
-- RAM: 4GB+
-- OS: Windows, Linux, hoặc MacOS
-
-### Bước 1: Setup Dependencies (Tự động)
-
-**Trên Windows:**
-```powershell
-setup.bat
-```
-
-Script sẽ tự động:
-- ✅ Kiểm tra Python và Node.js
-- ✅ Cài đặt dependencies cho backend
-- ✅ Cài đặt dependencies cho frontend
-
-**Hoặc cài đặt thủ công:**
-
-```powershell
-# Backend
-cd backend
-pip install -r requirements.txt
-cd ..
-
-# Frontend
-cd frontend
-npm install
-cd ..
-```
-
-### Bước 2: Chạy Backend Server
-
-**Terminal 1:**
-```powershell
-start-backend.bat
-```
-
-Hoặc:
-```powershell
-cd backend
-python app.py
-```
-
-Backend sẽ chạy tại: **http://localhost:5000**
-
-### Bước 3: Chạy Frontend Dashboard
-
-**Terminal 2 (mở terminal mới):**
-```powershell
-start-frontend.bat
-```
-
-Hoặc:
-```powershell
-cd frontend
-npm run dev
-```
-
-Frontend sẽ chạy tại: **http://localhost:3000**
-
-### Bước 4: Truy cập Dashboard
-
-1. **Mở trình duyệt** và truy cập: **http://localhost:3000**
-2. **Dashboard sẽ tự động kết nối** với backend
-3. **Theo dõi real-time:**
-   - 📊 Traffic patterns (requests/minute)
-   - 🔮 Predictions (1, 5, 15 phút)
-   - 🖥️ Server count và scaling events
-   - 💰 Cost analysis
-   - ⚡ System utilization
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.128-009688.svg)](https://fastapi.tiangolo.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
+[![LightGBM](https://img.shields.io/badge/LightGBM-4.6-yellow.svg)](https://lightgbm.readthedocs.io/)
 
 ---
 
-## 🐳 Chạy với Docker (Khuyến nghị)
+##  Mục lục
 
-### Yêu cầu
+- [Giới thiệu vấn đề](#-giới-thiệu-vấn-đề)
+- [Giải pháp](#-giải-pháp)
+- [Tính năng chính](#-tính-năng-chính)
+- [Cấu trúc dự án](#-cấu-trúc-dự-án)
+- [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
+- [Hướng dẫn cài đặt](#-hướng-dẫn-cài-đặt)
+- [Sử dụng Dashboard](#-sử-dụng-dashboard)
+- [API Endpoints](#-api-endpoints)
+- [Machine Learning Model](#-machine-learning-model)
+- [Troubleshooting](#-troubleshooting)
 
-- **Docker Desktop** (Windows/Mac) hoặc **Docker Engine** (Linux)
-- **Docker Compose** (thường đi kèm Docker Desktop)
+---
 
-### Cài đặt Docker
+##  Giới thiệu vấn đề
 
-**Windows/Mac:**
-- Tải Docker Desktop: https://www.docker.com/products/docker-desktop
-- Cài đặt và khởi động Docker Desktop
+Trong quản trị hệ thống cloud computing, việc cấp phát tài nguyên máy chủ gặp phải **3 thách thức lớn**:
 
-**Linux:**
+| Thách thức | Mô tả | Hậu quả |
+|------------|-------|---------|
+| **Static Allocation** | Cấp phát số server cố định dựa trên peak load | Lãng phí 60-80% tài nguyên khi traffic thấp |
+| **Manual Scaling** | DevOps phải theo dõi và scale thủ công | Phản ứng chậm  Downtime khi traffic spike |
+| **Reactive Autoscaling** | Scale sau khi hệ thống đã overload | Performance degradation, user experience kém |
+
+**Ví dụ thực tế:**
+- Một website có 1000 users vào giờ cao điểm (20h) nhưng chỉ 100 users lúc 3h sáng
+- Nếu cấp phát 10 servers cố định  Lãng phí 90% tài nguyên vào ban đêm
+- Nếu cấp phát 2 servers  Sập hệ thống vào giờ cao điểm
+
+---
+
+##  Giải pháp
+
+Hệ thống **Predictive Autoscaling** sử dụng Machine Learning để giải quyết các vấn đề trên:
+
+```
+
+                    PREDICTIVE AUTOSCALING                       
+
+  1. Thu thập dữ liệu traffic lịch sử                           
+                                                                
+  2. Huấn luyện ML model (LightGBM) để học patterns             
+                                                                
+  3. Dự báo traffic 1, 5, 15 phút tới                           
+                                                                
+
+###  Real-time Dashboard
+- **Live metrics**: Current traffic, predictions, server count, utilization
+- **Interactive charts**: Traffic load, server scaling, cost analysis
+- **Scaling events log**: Lịch sử các quyết định scaling
+- **Auto-refresh**: Update mỗi 5 giây
+
+###  Docker Deployment
+- **Containerized**: Backend và Frontend đóng gói trong Docker containers
+- **Health checks**: Tự động restart khi service fail
+- **Easy deployment**: Chạy 1 lệnh để start toàn bộ hệ thống
+
+###  Time Simulation
+- **Accelerated demo**: 5 giây thực = 1 phút NASA data
+- **Full patterns**: Xem đủ daily patterns trong vài phút
+- **Historical replay**: Test với dữ liệu thực từ NASA 1995
+
+---
+
+## 📁 Cấu trúc dự án
+
+```
+predictive-server-autoscaling/
+│
+├── backend/                            # 🐍 Backend API Server
+│   ├── app.py                          # Main FastAPI application
+│   ├── prepare_data.py                 # Data preparation utilities
+│   ├── requirements.txt                # Python dependencies
+│   ├── Dockerfile                      # Docker configuration
+│   ├── .dockerignore
+│   │
+│   ├── models/                         # Pydantic models
+│   │   ├── __init__.py
+│   │   ├── request_models.py           # API request schemas
+│   │   └── response_models.py          # API response schemas
+│   │
+│   └── services/                       # Business logic services
+│       ├── __init__.py
+│       ├── data_service.py             # Data loading and processing
+│       ├── prediction_service.py       # ML prediction service
+│       ├── autoscaling_service.py      # Autoscaling logic
+│       └── cost_tracker_service.py     # Cost tracking service
+│
+├── frontend/                           # 🎨 Frontend Dashboard
+│   ├── index.html                      # Main HTML file
+│   ├── package.json                    # Node.js dependencies
+│   ├── package-lock.json
+│   ├── tsconfig.json                   # TypeScript configuration
+│   ├── vite.config.ts                  # Vite build configuration
+│   ├── Dockerfile                      # Docker configuration
+│   ├── nginx.conf                      # Nginx configuration for production
+│   ├── .dockerignore
+│   │
+│   └── src/                            # TypeScript source files
+│       ├── main.ts                     # Main application logic
+│       ├── api.ts                      # API client
+│       ├── charts.ts                   # Chart.js configurations
+│       ├── types.ts                    # TypeScript type definitions
+│       └── styles/
+│           └── main.css                # Application styles
+│
+├── data/                               # 📊 Data Files
+│   ├── access_log_Jul95.txt            # NASA logs July 1995 (training)
+│   ├── access_log_Aug95.txt            # NASA logs August 1995 (test)
+│   ├── nasa_logs_processed.parquet     # Processed data
+│   ├── best_model_lgbm_5m.pkl          # Trained LightGBM model
+│   ├── prediction_results_5m.csv       # Model predictions
+│   └── raw/                            # Raw data backup
+│
+├── 📓 Jupyter Notebooks
+│   ├── Data_Processing.ipynb           # Data parsing and EDA
+│   ├── Basic_Experiment.ipynb          # Initial experiments
+│   ├── Final_Solution.ipynb            # Final model training
+│   └── Autoscaling_Optimization.ipynb  # Autoscaling policy optimization
+│
+├── 🐳 Docker Files
+│   ├── docker-compose.yml              # Docker Compose configuration
+│   ├── .dockerignore                   # Docker ignore rules
+│
+├── 📜 Scripts
+│   ├── docker-run.bat                  # Windows: Start Docker containers
+│   ├── docker-run.sh                   # Linux/Mac: Start Docker containers
+│   ├── docker-stop.bat                 # Windows: Stop containers
+│   ├── docker-stop.sh                  # Linux/Mac: Stop containers
+│   ├── setup.bat                       # Windows: Setup script
+│   ├── start-backend.bat               # Windows: Start backend manually
+│   └── start-frontend.bat              # Windows: Start frontend manually
+│
+├── 📝 Configuration Files
+│   ├── .env.example                    # Environment variables template
+│   ├── .gitignore                      # Git ignore rules
+│   ├── requirements.txt                # Root Python dependencies
+│   └── README.md                       # This file
+│
+└── 📄 Documentation
+    └── LICENSE                         # MIT License
+```
+
+---
+
+##  Yêu cầu hệ thống
+
+### Phần cứng tối thiểu
+
+| Component | Minimum | Khuyến nghị |
+|-----------|---------|-------------|
+| **OS** | Windows 10, Ubuntu 20.04, macOS 11 | Windows 11, Ubuntu 22.04, macOS 13 |
+| **CPU** | 2 cores | 4 cores |
+| **RAM** | 4 GB | 8 GB |
+| **Disk** | 5 GB free | 10 GB free |
+| **Network** | Internet connection | Stable connection |
+
+### Phần mềm
+
+**Phương án 1 - Docker (Khuyến nghị cho production):**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) 20.10+
+- Docker Compose v2.20+ (đi kèm Docker Desktop)
+
+**Phương án 2 - Manual (Khuyến nghị cho development):**
+- [Python](https://www.python.org/downloads/) 3.11+
+- [Node.js](https://nodejs.org/) 20 LTS+
+- pip 23+ (đi kèm Python)
+- npm 9+ (đi kèm Node.js)
+
+---
+
+##  Hướng dẫn cài đặt
+
+### Phương án 1: Docker (Khuyến nghị)
+
+>  **Ưu điểm của Docker:**
+> - Không cần cài Python/Node.js
+> - Environment nhất quán trên mọi OS
+> - Dễ deploy lên production
+> - Auto-restart khi có lỗi
+
+#### Bước 1: Cài đặt Docker Desktop
+
+**Windows:**
+1. Tải Docker Desktop: https://www.docker.com/products/docker-desktop
+2. Chạy **Docker Desktop Installer.exe**
+3. Chọn "Use WSL 2 instead of Hyper-V" (khuyến nghị)
+4. Chờ cài đặt hoàn tất (3-5 phút)
+5. Khởi động lại máy nếu được yêu cầu
+6. Mở Docker Desktop từ Start Menu
+7. Đợi Docker engine start (icon chuyển màu xanh)
+
+**macOS:**
+1. Tải Docker Desktop for Mac
+   - Intel chip: Download Intel version
+   - Apple Silicon (M1/M2/M3): Download Apple Silicon version
+2. Mở file .dmg và kéo Docker.app vào Applications
+3. Mở Docker từ Applications
+4. Đợi Docker engine start
+
+**Linux (Ubuntu/Debian):**
 ```bash
-# Ubuntu/Debian
+# Cài đặt Docker
 sudo apt-get update
-sudo apt-get install docker.io docker-compose
+sudo apt-get install -y ca-certificates curl gnupg lsb-release
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 # Start Docker
 sudo systemctl start docker
 sudo systemctl enable docker
+
+# Cho phép chạy Docker không cần sudo
+sudo usermod -aG docker $USER
+# Logout và login lại để áp dụng
 ```
 
-### Chạy với Docker - Cách đơn giản nhất 🚀
+**Kiểm tra cài đặt:**
+```bash
+docker --version
+# Output: Docker version 24.0.x
+
+docker compose version
+# Output: Docker Compose version v2.20+
+```
+
+#### Bước 2: Clone/Download Project
+
+**Option A - Clone với Git:**
+```bash
+git clone https://github.com/your-username/predictive-server-autoscaling.git
+cd predictive-server-autoscaling
+```
+
+**Option B - Download ZIP:**
+1. Download ZIP từ GitHub repository
+2. Giải nén vào thư mục `predictive-server-autoscaling`
+3. Mở Terminal/PowerShell tại thư mục này
+
+#### Bước 3: Build và Start Containers
 
 **Windows:**
 ```powershell
-# Chỉ cần chạy 1 lệnh!
-docker-run.bat
+# Chạy script tự động
+.\docker-run.bat
 ```
 
-**Linux/Mac:**
+**Linux/macOS:**
 ```bash
-# Cấp quyền thực thi (chỉ cần 1 lần)
+# Cấp quyền thực thi (chỉ lần đầu)
 chmod +x docker-run.sh
 
-# Chạy
+# Chạy script
 ./docker-run.sh
 ```
 
-Script sẽ tự động:
-- ✅ Kiểm tra Docker
-- ✅ Build containers (backend + frontend)
-- ✅ Start services
-- ✅ Mở browser tự động
-
-**Hệ thống sẽ chạy tại:**
-- 🌐 **Frontend Dashboard**: http://localhost
-- 🔧 **Backend API**: http://localhost:5000
-
-### Lệnh Docker nâng cao
-
-**Build và start containers:**
+**Hoặc chạy manual với docker-compose:**
 ```bash
-docker-compose up -d
-```
+# Build và start containers (chạy background)
+docker-compose up -d --build
 
-**Build lại (sau khi thay đổi code):**
-```bash
-docker-compose up --build -d
-```
-
-**Xem logs:**
-```bash
-# Xem tất cả logs
+# Xem build logs
 docker-compose logs -f
 
-# Xem logs của backend
-docker-compose logs -f backend
-
-# Xem logs của frontend
-docker-compose logs -f frontend
-```
-
-**Kiểm tra trạng thái containers:**
-```bash
+# Kiểm tra status
 docker-compose ps
 ```
 
-**Stop containers:**
+**Thời gian build:**
+- Lần đầu: 3-5 phút (download images + install dependencies)
+- Các lần sau: 5-10 giây (cached)
+
+#### Bước 4: Kiểm tra và Truy cập
+
+**Kiểm tra containers đang chạy:**
+```bash
+docker-compose ps
+
+# Output mong đợi:
+# NAME                   STATUS              PORTS
+# autoscaling-backend    Up (healthy)        0.0.0.0:5000->5000/tcp
+# autoscaling-frontend   Up                  0.0.0.0:3000->80/tcp
+```
+
+**Truy cập hệ thống:**
+
+| Service | URL | Mô tả |
+|---------|-----|-------|
+| **Dashboard** | http://localhost:3000 | Giao diện chính |
+| **API Docs** | http://localhost:5000/docs | Swagger UI |
+| **Health Check** | http://localhost:5000/api/health | Kiểm tra backend |
+
+#### Quản lý Containers
+
 ```bash
 # Dừng containers (giữ data)
 docker-compose stop
 
-# Hoặc dùng script
-docker-stop.bat        # Windows
-./docker-stop.sh       # Linux/Mac
+# Khởi động lại containers đã dừng
+docker-compose start
 
-# Stop và xóa containers
+# Dừng và xóa containers
 docker-compose down
-```
 
-**Restart containers:**
-```bash
-docker-compose restart
-```
+# Rebuild khi thay đổi code
+docker-compose down
+docker-compose up -d --build
 
-**Xem resource usage:**
-```bash
+# Xem logs real-time
+docker-compose logs -f
+
+# Xem logs của service cụ thể
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Xem resource usage
 docker stats
 ```
 
-### Cấu trúc Docker
+---
 
-```
-📁 predictive-server-autoscaling/
-├── 📄 docker-compose.yml           # Orchestration file
-├── 📄 docker-run.bat               # Windows run script
-├── 📄 docker-run.sh                # Linux/Mac run script
-├── 📄 docker-stop.bat              # Windows stop script
-├── 📄 docker-stop.sh               # Linux/Mac stop script
-│
-├── 📁 backend/
-│   ├── 📄 Dockerfile               # Backend container config
-│   └── 📄 .dockerignore            # Files to exclude
-│
-└── 📁 frontend/
-    ├── 📄 Dockerfile               # Frontend container config
-    ├── 📄 nginx.conf               # Nginx config for production
-    └── 📄 .dockerignore            # Files to exclude
-```
+### Phương án 2: Cài đặt thủ công
 
-### Troubleshooting Docker
+>  **Khi nào dùng Manual:**
+> - Development và debugging
+> - Không có Docker
+> - Muốn customize environment
 
-**❌ "Docker is not running"**
+#### Bước 1: Kiểm tra Prerequisites
+
 ```bash
-# Khởi động Docker Desktop (Windows/Mac)
-# Hoặc trên Linux:
-sudo systemctl start docker
+# Kiểm tra Python
+python --version
+# Cần: Python 3.11.x hoặc mới hơn
+
+# Kiểm tra pip
+pip --version
+# Cần: pip 23.x+
+
+# Kiểm tra Node.js
+node --version
+# Cần: v20.x.x hoặc mới hơn
+
+# Kiểm tra npm
+npm --version
+# Cần: 9.x+
 ```
 
-**❌ "Port already in use"**
-```bash
-# Kiểm tra port đang dùng
-netstat -ano | findstr :5000    # Windows
-lsof -i :5000                   # Linux/Mac
+**Nếu chưa cài Python:**
+- Windows: https://www.python.org/downloads/ (chọn "Add Python to PATH")
+- macOS: `brew install python@3.11`
+- Linux: `sudo apt install python3.11 python3.11-venv python3-pip`
 
-# Stop container đang chạy
-docker-compose down
+**Nếu chưa cài Node.js:**
+- Windows/macOS: https://nodejs.org/ (Download LTS version)
+- Linux: `curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs`
+
+#### Bước 2: Clone Project
+
+```bash
+git clone https://github.com/your-username/predictive-server-autoscaling.git
+cd predictive-server-autoscaling
 ```
 
-**❌ Containers bị lỗi**
+#### Bước 3: Setup Backend
+
 ```bash
-# Xem logs để debug
-docker-compose logs
+# Di chuyển vào thư mục backend
+cd backend
+
+# Tạo virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+
+# Upgrade pip
+python -m pip install --upgrade pip
+
+# Cài đặt dependencies
+pip install -r requirements.txt
+
+# Thời gian: 2-3 phút (download khoảng 500MB packages)
+```
+
+**Kiểm tra cài đặt backend:**
+```bash
+# Test imports
+python -c "import fastapi; import lightgbm; import pandas; print(' All packages OK')"
+```
+
+#### Bước 4: Setup Frontend
+
+```bash
+# Quay lại root directory
+cd ..
+
+# Di chuyển vào frontend
+cd frontend
+
+# Cài đặt dependencies
+npm install
+
+# Thời gian: 1-2 phút (download khoảng 200MB node_modules)
+```
+
+**Kiểm tra cài đặt frontend:**
+```bash
+# Test build
+npm run build
+# Nếu thấy thư mục "dist" được tạo  Success!
+```
+
+#### Bước 5: Chạy Backend (Terminal 1)
+
+```bash
+# Di chuyển vào backend
+cd backend
+
+# Activate venv (nếu chưa)
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+
+# Chạy server
+python app.py
+```
+
+**Output mong đợi:**
+```
+INFO:     Started server process [xxxxx]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+```
+
+ Backend chạy tại: **http://localhost:5000**
+
+#### Bước 6: Chạy Frontend (Terminal 2 - Mở terminal MỚI)
+
+```bash
+# Di chuyển vào frontend
+cd frontend
+
+# Chạy development server
+npm run dev
+```
+
+**Output mong đợi:**
+```
+VITE v6.x.x  ready in xxx ms
+
+  Local:   http://localhost:5173/
+  Network: use --host to expose
+```
+
+ Frontend chạy tại: **http://localhost:5173**
+
+#### Bước 7: Truy cập Dashboard
+
+| Service | URL |
+|---------|-----|
+| **Dashboard** | http://localhost:5173 |
+| **API Docs** | http://localhost:5000/docs |
+
+**Lưu ý quan trọng:**
+- Frontend (manual) chạy port **5173**, không phải 3000 như Docker
+- Backend phải chạy trước để frontend có thể connect
+
+#### Dừng Servers
+
+```bash
+# Backend: Nhấn Ctrl+C trong terminal backend
+
+# Frontend: Nhấn Ctrl+C trong terminal frontend
+
+# Deactivate venv (backend)
+deactivate
+```
+
+---
+
+##  Sử dụng Dashboard
+
+### Giao diện tổng quan
+
+Khi truy cập Dashboard, bạn sẽ thấy:
+
+```
+
+   Predictive Server Autoscaling        [Connected ]   
+
+                                                            
+          
+   Current    Predicted  Active     Cost/         
+   Requests   (5min)     Servers    Hour          
+     42         56          3        $0.30        
+          
+                                                            
+    
+             Traffic Load Chart                        
+     Actual     Predicted                    
+    
+                                                            
+     
+    Server Count         Scaling Events           
+                          10:05 Scale-out 23         
+                          10:02 Maintain 2            
+     
+
+```
+
+### Main Metrics (Top Cards)
+
+| Metric | Ý nghĩa | Giá trị mẫu |
+|--------|---------|-------------|
+| **Current Requests** | Số requests/minute hiện tại | 42 req/min |
+| **Predicted (5M)** | Dự báo traffic 5 phút tới | 56 req/min |
+| **Active Servers** | Số servers đang active | 3 servers |
+| **Utilization** | % capacity đang sử dụng | 70% |
+| **Cost/Hour** | Chi phí vận hành | $0.30/hour |
+
+### Charts
+
+**1. Traffic Load Chart:**
+- **Actual (xanh)**: Traffic thực tế
+- **Predicted (cam)**: Traffic dự báo
+- Update mỗi 5 giây
+- Hiển thị 10 phút gần nhất
+
+**2. Server Count Chart:**
+- Số servers theo thời gian
+- Highlight khi có scaling event
+
+**3. Cost Analysis Chart:**
+- Chi phí tích lũy theo thời gian
+- Tính theo số servers  $0.10/hour
+
+### Predictions Panel
+
+Hiển thị 3 predictions với confidence scores:
+
+| Interval | Prediction | Confidence |
+|----------|------------|------------|
+| 1 minute | 45 req/min | 94% |
+| 5 minutes | 56 req/min | 90% |
+| 15 minutes | 72 req/min | 80% |
+
+### Scaling Events Log
+
+Lịch sử các quyết định scaling:
+```
+10:05:00  SCALE-OUT  2  3 servers  "Predicted utilization 85% > threshold 80%"
+10:02:00  MAINTAIN   2 servers      "Utilization 65% within normal range"
+09:55:00  SCALE-IN   3  2 servers  "Utilization 35% < threshold 40%"
+```
+
+### Autoscaling Configuration
+
+| Parameter | Value | Mô tả |
+|-----------|-------|-------|
+| Min Servers | 1 | Số server tối thiểu |
+| Max Servers | 50 | Số server tối đa |
+| Scale-out Threshold | 80% | Scale-out khi utilization > 80% |
+| Scale-in Threshold | 40% | Scale-in khi utilization < 40% |
+| Cooldown Period | 2 min | Thời gian chờ giữa 2 lần scale |
+| Requests per Server | 200 | Capacity mỗi server |
+| Cost per Server | $0.10/hour | Chi phí mỗi server |
+
+### NASA Time Simulation
+
+Dashboard sử dụng **time-accelerated simulation**:
+- **5 giây thực = 1 phút NASA data**
+- Data bắt đầu từ August 25, 1995, 06:00 AM
+- Xem đủ daily traffic patterns trong vài phút thực
+
+---
+
+##  API Endpoints
+
+### Overview
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/api/health` | Health check |
+| GET | `/api/current-traffic` | Traffic hiện tại |
+| POST | `/api/forecast` | Dự báo traffic |
+| POST | `/api/scaling-recommendation` | Scaling recommendation |
+| GET | `/api/dashboard-data` | Full dashboard data |
+| GET | `/api/scaling-events` | Lịch sử scaling events |
+| GET | `/api/config` | Autoscaling configuration |
+
+### Chi tiết từng Endpoint
+
+#### 1. Health Check
+```bash
+curl http://localhost:5000/api/health
+```
+```json
+{
+  "status": "healthy",
+  "timestamp": "1995-08-25T10:30:00",
+  "version": "1.0.0"
+}
+```
+
+#### 2. Current Traffic
+```bash
+curl http://localhost:5000/api/current-traffic
+```
+```json
+{
+  "timestamp": "1995-08-25T10:30:00",
+  "current_requests": 42,
+  "current_bytes": 1250000
+}
+```
+
+#### 3. Forecast
+```bash
+curl -X POST http://localhost:5000/api/forecast \
+  -H "Content-Type: application/json" \
+  -d '{"intervals": [1, 5, 15]}'
+```
+```json
+{
+  "timestamp": "1995-08-25T10:30:00",
+  "predictions": [
+    {"interval": 1, "predicted_requests": 45, "confidence": 0.94},
+    {"interval": 5, "predicted_requests": 56, "confidence": 0.90},
+    {"interval": 15, "predicted_requests": 72, "confidence": 0.80}
+  ]
+}
+```
+
+#### 4. Scaling Recommendation
+```bash
+curl -X POST http://localhost:5000/api/scaling-recommendation \
+  -H "Content-Type: application/json" \
+  -d '{
+    "current_servers": 2,
+    "current_requests": 350,
+    "predicted_requests": 450
+  }'
+```
+```json
+{
+  "current_servers": 2,
+  "recommended_servers": 3,
+  "action": "scale-out",
+  "reason": "Predicted utilization (112%) exceeds threshold (80%)",
+  "estimated_utilization": 75.0,
+  "estimated_cost_change": 0.10
+}
+```
+
+#### 5. Dashboard Data
+```bash
+curl http://localhost:5000/api/dashboard-data
+```
+Trả về full data cho dashboard: metrics, predictions, scaling events, config.
+
+**Full API Documentation:** http://localhost:5000/docs (Swagger UI)
+
+---
+
+##  Machine Learning Model
+
+### Dataset
+
+**Source:** NASA Kennedy Space Center WWW Server Logs
+- **URL:** http://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html
+- **Period:** July 1 - August 31, 1995
+- **Total requests:** ~3.4 million
+
+**Data Split:**
+| Set | Period | Records | Dùng cho |
+|-----|--------|---------|----------|
+| Training | July 1995 | ~1.9M | Train model |
+| Validation | Aug 1-22 | ~1.2M | Tune hyperparameters |
+| Test | Aug 23-31 | ~300K | Evaluate & Demo |
+
+### Feature Engineering
+
+**Time-based Features (6):**
+```python
+'hour'           # Giờ trong ngày (0-23)
+'dayofweek'      # Thứ trong tuần (0=Monday, 6=Sunday)
+'is_weekend'     # Cuối tuần (0/1)
+'part_of_day'    # Buổi: 0=night, 1=morning, 2=afternoon, 3=evening
+'hour_sin'       # sin(2π  hour/24) - cyclic encoding
+'hour_cos'       # cos(2π  hour/24) - cyclic encoding
+```
+
+**Lag Features (3):**
+```python
+'lag_1'          # Traffic 1 interval trước
+'lag_2'          # Traffic 2 intervals trước
+'lag_3'          # Traffic 3 intervals trước
+```
+
+**Rolling Statistics (3):**
+```python
+'rolling_mean'   # Mean của 5 intervals gần nhất
+'rolling_std'    # Standard deviation của 5 intervals
+'rolling_max'    # Max của 5 intervals
+```
+
+### Model: LightGBM
+
+**Algorithm:** Light Gradient Boosting Machine
+- Nhanh hơn XGBoost 10-20x
+- Memory efficient
+- Tốt với large datasets
+
+**Hyperparameters:**
+```python
+{
+    'n_estimators': 500,
+    'learning_rate': 0.01,
+    'max_depth': 6,
+    'num_leaves': 31,
+    'min_child_samples': 20,
+    'objective': 'regression',
+    'metric': 'rmse'
+}
+```
+
+### Performance Metrics
+
+**5-minute Interval (Primary):**
+
+| Metric | Value | Ý nghĩa |
+|--------|-------|---------|
+| **MAE** | 4.5 req/min | Trung bình sai số 4.5 requests |
+| **RMSE** | 6.2 req/min | Root mean square error |
+| **R** | 0.88 | Giải thích 88% variance |
+| **Accuracy** | 90% | % predictions trong 10% actual |
+
+**Comparison across intervals:**
+
+| Interval | MAE | RMSE | R | Accuracy |
+|----------|-----|------|-----|----------|
+| 1 min | 2.3 | 3.1 | 0.92 | 94% |
+| 5 min | 4.5 | 6.2 | 0.88 | 90% |
+| 15 min | 8.1 | 11.3 | 0.78 | 80% |
+
+### Jupyter Notebooks
+
+| Notebook | Mô tả |
+|----------|-------|
+| `Data_Processing.ipynb` | Parse raw logs, EDA, feature engineering |
+| `Final_Solution.ipynb` | Model training, hyperparameter tuning, evaluation |
+| `Autoscaling_Optimization.ipynb` | Scaling policy optimization, cost analysis |
+
+---
+
+##  Troubleshooting
+
+### Docker Issues
+
+| Vấn đề | Nguyên nhân | Giải pháp |
+|--------|-------------|-----------|
+| "Docker is not running" | Docker Desktop chưa start | Mở Docker Desktop, đợi icon xanh |
+| Containers không start | Lỗi trong code hoặc config | `docker-compose logs` để xem chi tiết |
+| Port already in use | Port 5000/3000 đã bị chiếm | Kill process: `netstat -ano \| findstr :5000` |
+| Build lỗi | Cache bị corrupt | `docker-compose down --rmi all` rồi rebuild |
+| Backend unhealthy | Dependencies lỗi | `docker-compose build --no-cache backend` |
+
+**Debug commands:**
+```bash
+# Xem logs chi tiết
+docker-compose logs -f
+
+# Xem logs của 1 service
+docker-compose logs -f backend
+
+# Kiểm tra container status
+docker-compose ps
+
+# Restart 1 service
+docker-compose restart backend
 
 # Rebuild từ đầu
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker-compose down --volumes
+docker-compose up -d --build
 ```
 
-**❌ Thiếu dependencies**
+### Manual Installation Issues
+
+| Vấn đề | Nguyên nhân | Giải pháp |
+|--------|-------------|-----------|
+| "Module not found" | Dependencies chưa cài đủ | `pip install -r requirements.txt --force-reinstall` |
+| "venv not activated" | Quên activate venv | `venv\Scripts\activate` (Windows) |
+| Frontend không connect | Backend chưa chạy | Kiểm tra http://localhost:5000/api/health |
+| CORS error | Backend CORS config | Kiểm tra `allow_origins` trong app.py |
+| npm install lỗi | npm cache corrupt | `npm cache clean --force` rồi install lại |
+| Port 5000 in use | Process khác đang dùng | Kill process hoặc đổi port |
+
+**Debug commands:**
 ```bash
-# Xóa images cũ và rebuild
-docker-compose down --rmi all
-docker-compose up --build -d
+# Kiểm tra port
+netstat -ano | findstr :5000   # Windows
+lsof -i :5000                  # Linux/Mac
+
+# Kill process (Windows)
+taskkill /PID <PID> /F
+
+# Test backend imports
+cd backend
+python -c "import app; print('OK')"
+
+# Test API
+curl http://localhost:5000/api/health
 ```
 
-### Ưu điểm của Docker
+### Common Errors
 
-✅ **Không cần cài Python/Node.js** trên máy host  
-✅ **Environment nhất quán** trên mọi hệ điều hành  
-✅ **Dễ dàng deploy** lên production  
-✅ **Tự động restart** khi có lỗi  
-✅ **Isolated** - không ảnh hưởng system  
-✅ **Scale dễ dàng** khi cần  
+**1. "LightGBM model not found"**
+```bash
+# Model file missing
+# Giải pháp: Chạy notebook Final_Solution.ipynb để train model
+```
+
+**2. "Data file not found"**
+```bash
+# NASA logs missing
+# Kiểm tra: ls data/access_log_Aug95.txt
+# Download từ: http://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html
+```
+
+**3. "Connection refused" trên Dashboard**
+```bash
+# Backend chưa chạy hoặc khác port
+# Kiểm tra backend đã start và chạy đúng port 5000
+curl http://localhost:5000/api/health
+```
 
 ---
 
-## 📊 Tính năng Dashboard
-
-### 🎯 Real-time Monitoring
-- **Current Traffic**: Hiển thị số requests/minute hiện tại
-- **Predictions**: Dự báo traffic cho 1, 5, 15 phút tới
-- **Active Servers**: Số lượng server đang hoạt động
-- **System Utilization**: Tỷ lệ sử dụng tài nguyên (%)
-- **Cost Tracking**: Chi phí vận hành theo giờ
-
-### 📈 Interactive Charts
-1. **Traffic Load Chart**: Biểu đồ so sánh actual vs predicted requests
-2. **Server Count Chart**: Theo dõi số server qua thời gian
-3. **Cost Analysis Chart**: Phân tích chi phí vận hành
-4. **Predictions Panel**: Dự báo multi-interval với confidence scores
-5. **Scaling Events Log**: Lịch sử các quyết định scaling
-6. **System Information**: Cấu hình autoscaling
-
-### ⚙️ Autoscaling Configuration
-
-**Thông số mặc định:**
-- **Min Servers**: 2
-- **Max Servers**: 50
-- **Target Utilization**: 70%
-- **Scale-out Threshold**: 80% (scale out khi vượt)
-- **Scale-in Threshold**: 50% (scale in khi dưới)
-- **Requests per Server**: 200 requests/min
-- **Cost per Server**: $0.50/hour
-
-## 🔧 API Endpoints
-
-### 1. Health Check
-```http
-GET /api/health
-```
-Kiểm tra trạng thái backend.
-
-### 2. Get Forecast
-```http
-POST /api/forecast
-Content-Type: application/json
-
-{
-  "current_time": "2024-01-01T10:30:00",
-  "intervals": [1, 5, 15]
-}
-```
-
-**Response:**
-```json
-{
-  "timestamp": "2024-01-01T10:30:00",
-  "predictions": [
-    {
-      "interval_minutes": 5,
-      "predicted_requests": 150.5,
-      "predicted_bytes": 3000000.0,
-      "confidence": 0.87,
-      "timestamp": "2024-01-01T10:35:00"
-    }
-  ],
-  "status": "success"
-}
-```
-
-### 3. Get Scaling Recommendation
-```http
-POST /api/recommend-scaling
-Content-Type: application/json
-
-{
-  "current_servers": 5,
-  "current_load": 850.0,
-  "predicted_load": 1200.0,
-  "current_utilization": 85.0
-}
-```
-
-**Response:**
-```json
-{
-  "timestamp": "2024-01-01T10:30:00",
-  "current_servers": 5,
-  "recommended_servers": 7,
-  "action": "scale-out",
-  "reason": "Predicted utilization (85.7%) exceeds threshold (80%)",
-  "confidence": 0.9,
-  "estimated_utilization": 71.4,
-  "estimated_cost_change": 1.0
-}
-```
-
-### 4. Get Historical Data
-```http
-GET /api/historical-data?interval=5m&limit=100
-```
-
-### 5. Get Metrics Summary
-```http
-GET /api/metrics/summary
-```
-
-### 6. Get Autoscaling Config
-```http
-GET /api/autoscaling/config
-```
-
-## 📁 Cấu trúc dữ liệu
-
-### Dữ liệu đầu vào (NASA Logs)
-- **Format**: ASCII text logs
-- **Fields**: Host, Timestamp, Request, Status Code, Bytes
-- **Period**: July 1 - August 31, 1995
-- **Train Set**: Tháng 7 + 22 ngày đầu tháng 8
-- **Test Set**: 23-31 tháng 8
-
-### Features cho Model
-```python
-features = [
-    'hour',           # Giờ trong ngày (0-23)
-    'dayofweek',      # Thứ trong tuần (0-6)
-    'is_weekend',     # Cuối tuần (0/1)
-    'part_of_day',    # Buổi trong ngày (0-3)
-    'hour_sin',       # Sin của giờ (cyclical)
-    'hour_cos',       # Cos của giờ (cyclical)
-    'lag_1',          # Requests 1 bước trước
-    'lag_2',          # Requests 2 bước trước
-    'lag_3',          # Requests 3 bước trước
-    'rolling_mean',   # Mean của 3 bước trước
-    'rolling_std',    # Std của 3 bước trước
-    'rolling_max'     # Max của 3 bước trước
-]
-```
-
-## 🎓 Machine Learning Models
-
-### XGBoost Regressor
-- **Framework**: XGBoost 2.0.2
-- **Task**: Regression (dự báo số requests)
-- **Intervals**: 1 phút, 5 phút, 15 phút
-- **Hyperparameters**:
-  - `n_estimators`: ~200-500 (với early stopping)
-  - `learning_rate`: 0.01
-  - `max_depth`: 6
-  - `objective`: reg:squarederror
-
-### Evaluation Metrics
-- **RMSE** (Root Mean Square Error)
-- **MSE** (Mean Square Error)
-- **MAE** (Mean Absolute Error)
-- **MAPE** (Mean Absolute Percentage Error)
-
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### Backend
-- **Framework**: FastAPI 0.104.1
-- **ML Library**: XGBoost 2.0.2
-- **Data Processing**: Pandas, NumPy
-- **Server**: Uvicorn (ASGI)
+- **Python 3.11** - Programming language
+- **FastAPI 0.128** - Modern web framework
+- **LightGBM 4.6** - ML model
+- **Pandas 3.0** - Data processing
+- **NumPy** - Numerical computing
+- **Uvicorn 0.40** - ASGI server
+- **Pydantic** - Data validation
 
 ### Frontend
-- **Language**: TypeScript 5.3.3
-- **Build Tool**: Vite 5.0.8
-- **Charts**: Chart.js 4.4.1
-- **No Framework**: Vanilla TypeScript (no React/Vue)
+- **TypeScript 5.7** - Type-safe JavaScript
+- **Vite 6.1** - Fast build tool
+- **Chart.js 4.4** - Data visualization
+- **Vanilla TS** - No framework (lightweight)
 
-## 📝 Notebooks
-
-### 1. Data_Processing.ipynb
-- Load raw NASA logs
-- Parse log format
-- Extract features
-- Resample to 1m, 5m, 15m intervals
-- Save processed data
-
-### 2. Final_Solution.ipynb
-- Feature engineering
-- Train/validation/test split
-- XGBoost model training
-- Hyperparameter tuning
-- Model evaluation
-- Results visualization
-
-### 3. Autoscaling_Optimization.ipynb
-- Cost analysis
-- Scaling policy design
-- Performance vs cost trade-offs
-
-## 🧪 Testing
-
-### Test Backend API
-```powershell
-# Test health endpoint
-curl http://localhost:5000/api/health
-
-# Test forecast endpoint
-curl -X POST http://localhost:5000/api/forecast ^
-  -H "Content-Type: application/json" ^
-  -d "{\"current_time\":\"2024-01-01T10:00:00\",\"intervals\":[5]}"
-```
-
-### Test Frontend
-1. Mở http://localhost:3000
-2. Kiểm tra connection status
-3. Verify các charts hiển thị đúng
-4. Test predictions panel
-5. Kiểm tra scaling events log
-
-## 🐛 Troubleshooting
-
-### Backend không start
-- **Kiểm tra port 5000**: `netstat -ano | findstr :5000`
-- **Cài lại dependencies**: `pip install -r backend/requirements.txt`
-- **Kiểm tra Python version**: `python --version` (cần 3.8+)
-
-### Frontend không kết nối Backend
-- **Kiểm tra CORS**: Backend có enabled CORS
-- **Verify backend URL**: Trong `frontend/src/api.ts`, check `API_BASE_URL`
-- **Kiểm tra browser console**: F12 để xem errors
-
-### Charts không hiển thị
-- **Clear cache**: Ctrl+Shift+R
-- **Kiểm tra Chart.js**: `npm list chart.js`
-- **Check browser console**: Tìm JavaScript errors
-
-## 📚 Tài liệu tham khảo
-
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [XGBoost Documentation](https://xgboost.readthedocs.io/)
-- [Chart.js Documentation](https://www.chartjs.org/)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [NASA Logs Dataset](http://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html)
-
-## 👥 Team & Contact
-
-**Project**: Predictive Server Autoscaling
-**Competition**: DATAFLOW 2026 - The Alchemy of Minds
-**Organization**: Câu lạc bộ Toán Tin HAMIC
-
-## 📄 License
-
-MIT License - See LICENSE file for details
+### DevOps
+- **Docker** - Containerization
+- **Docker Compose** - Container orchestration
+- **Nginx** - Reverse proxy (production)
 
 ---
 
-**© 2026 Predictive Server Autoscaling System**
-- **Scale-in Threshold**: 40% utilization  
-- **Cooldown Period**: 5 minutes
-- **Cost per Server**: $0.10/hour
+##  License
 
-### Demo Settings:
-- **Streaming Speed**: 1 second = 5 minutes real-time (có thể tua nhanh)
-- **Prediction Intervals**: [1, 5, 15] phút
-- **Test Dataset Period**: 23-31 August 1995 (9 days)
-- **Data Points**: ~2,590 records (5-minute intervals)
-
-## 📈 Demo Scenarios
-
-### 🌊 Scenario 1: Normal Traffic
-- Hệ thống duy trì 2-4 servers
-- Utilization ổn định 40-60%
-- Cost optimization focus
-
-### 🚀 Scenario 2: Traffic Spike 
-- Prediction phát hiện spike sớm
-- Scale-out proactive trước khi overload
-- Maintain performance SLA
-
-### 📉 Scenario 3: Traffic Drop
-- Scale-in sau khi traffic giảm
-- Cost saving optimization
-- Avoid over-provisioning
-
-## 🔧 Technical Details
-
-### 🔙 Backend Architecture (Flask)
-
-**🎮 DemoOrchestrator**: 
-- Coordinate tất cả services
-- Real-time data flow management  
-- API endpoint orchestration
-
-**📊 DataStreamer**: 
-- Sequential streaming từ test CSV
-- Configurable speed (1s = 5min real-time)
-- Event-driven architecture
-
-**🔮 PredictionService**:
-- Moving average + trend analysis
-- Multi-interval predictions (1, 5, 15 min)
-- Confidence scoring
-
-**⚡ AutoscalingEngine**:
-- Threshold-based scaling logic
-- Consecutive period requirements
-- Cooldown protection
-- Cost tracking
-
-### 🎨 Frontend Architecture (Vanilla TypeScript)
-
-**📊 Chart.js Integration**: Real-time data visualization
-**🔌 REST API Polling**: 2-second intervals
-**📱 Responsive Design**: Works on desktop/mobile
-**🔧 TypeScript**: Full type safety
-**⚡ Vite**: Fast development server
-
-## 📋 API Endpoints
-
-```http
-GET  /api/status           # Demo status và progress
-POST /api/demo/start       # Bắt đầu streaming demo
-POST /api/demo/stop        # Dừng streaming demo
-POST /api/demo/reset       # Reset về đầu dataset
-GET  /api/data/current     # Current real-time data  
-GET  /api/data/historical  # Historical data cho charts
-GET  /api/config           # Configuration settings
-GET  /                     # API info và health check
-```
-
-## 🎮 Demo Flow
-
-1. **📂 Data Loading**: Load test dataset từ data/test_dataset.csv
-2. **▶️ Streaming Start**: Bắt đầu sequential data streaming
-3. **⚡ Real-time Processing**:
-   - Nhận data point mới mỗi 1 giây (= 5 phút real-time)
-   - Generate traffic predictions cho 1, 5, 15 phút
-   - Make scaling decisions dựa trên 5-min prediction
-   - Update dashboard real-time
-4. **📊 Visualization**: Charts update với new data
-5. **📈 Monitoring**: Track cost, utilization, scaling events
-
-## ⚡ Performance Features
-
-- **⚡ Real-time Updates**: 2-second polling interval
-- **📱 Responsive Design**: Desktop + mobile friendly
-- **🔄 Error Handling**: Graceful connection management
-- **💾 Memory Management**: Limited history retention (1000 events)
-- **🛡️ Type Safety**: Full TypeScript coverage
-- **🔧 Auto-recovery**: Handles backend disconnections
-
-## 🛠️ Troubleshooting
-
-### 🔙 Backend Issues
-
-```bash
-# Kiểm tra Python version (cần 3.8+)
-python --version
-
-# Kiểm tra test dataset
-ls data/test_dataset.csv
-
-# Xem logs backend
-cd backend && python app.py
-
-# Kiểm tra port 5000 
-netstat -an | grep 5000
-```
-
-### 🎨 Frontend Issues
-
-```bash
-# Kiểm tra Node.js version (cần 18+)  
-node --version
-
-# Reinstall dependencies
-cd frontend && npm install
-
-# Kiểm tra port 3000
-netstat -an | grep 3000
-
-# Build production version
-npm run build
-```
-
-### 📊 Data Issues  
-
-```bash
-# Re-generate test dataset nếu bị lỗi
-cd backend && python extract_test_data.py
-
-# Kiểm tra original logs
-ls data/access_log_*.txt
-
-# Xem sample test data
-head data/test_dataset.csv
-```
-
-## 📝 Development Notes
-
-### 🔮 Prediction Model
-- Hiện tại sử dụng **simple moving average + linear trend**
-- Có thể thay thế bằng **advanced ML models** từ notebook
-- Confidence score dựa trên recent variance
-
-### ⚡ Scaling Logic
-- **Threshold-based** với consecutive period requirements
-- **Cooldown protection** để tránh thrashing
-- **Buffer scaling** (+1 server) cho safety margin
-
-### 📊 Data Processing  
-- **5-minute aggregation** từ raw logs
-- **Real-time streaming** với configurable speed
-- **Memory-efficient** với rolling history
-
-### 🎨 Frontend Technology
-- **Vanilla TypeScript** (không React) theo yêu cầu
-- **Chart.js** cho data visualization
-- **CSS Grid/Flexbox** cho responsive layout
-- **REST API polling** thay vì WebSocket để đơn giản
+MIT License - See [LICENSE](LICENSE) file for details.
 
 ---
 
-**✨ Demo này thể hiện đầy đủ pipeline của Predictive Autoscaling System theo yêu cầu đề bài, sử dụng đúng Test Set (23-31/08/1995) để mô phỏng streaming real-time với frontend vanilla TypeScript.**
+<div align="center">
+
+** Star this repo if you find it useful! **
+
+Made with  by **HAMIC AI Team**
+
+**Competition:** DATAFLOW 2026 - The Alchemy of Minds
+
+[ Back to top](#-predictive-server-autoscaling-system)
+
+</div>
