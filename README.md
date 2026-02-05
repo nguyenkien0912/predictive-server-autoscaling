@@ -80,7 +80,8 @@ Hệ thống **Predictive Autoscaling** sử dụng Machine Learning để giả
 
 predictive-server-autoscaling/
 │
-├── backend/                            # Backend API Server│   ├── requirements.txt                # Python dependencies
+├── backend/                            # Backend API Server
+│   ├── requirements.txt                # Python dependencies
 │   ├── Dockerfile                      # Docker configuration
 │   ├── .dockerignore
 │   │
