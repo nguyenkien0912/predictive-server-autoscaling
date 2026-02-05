@@ -10,6 +10,7 @@ from typing import Dict, List, Any
 import uvicorn
 from datetime import datetime, timedelta
 import logging
+import time
 
 from services.data_service import DataService
 from services.prediction_service import PredictionService
@@ -23,6 +24,30 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Simulated time tracking for demo purposes
+# Advances 1 NASA minute every 5 real seconds to show data variation
+SIMULATION_START_TIME = datetime(1995, 8, 25, 6, 0, 0)  # Start at 6 AM
+SIMULATION_START_REAL = time.time()  # Real time when simulation started
+SIMULATION_SPEED = 12  # 1 real second = 12 simulated seconds (5 real sec = 1 min)
+
+def get_simulated_time() -> str:
+    """
+    Get current simulated time in NASA dataset.
+    Advances 1 minute every 5 real seconds for visible data variation.
+    """
+    elapsed_real_seconds = time.time() - SIMULATION_START_REAL
+    elapsed_simulated_seconds = elapsed_real_seconds * SIMULATION_SPEED
+    
+    simulated_time = SIMULATION_START_TIME + timedelta(seconds=elapsed_simulated_seconds)
+    
+    # Wrap around after 24 hours (keep within August 25, 1995)
+    if simulated_time.day != SIMULATION_START_TIME.day:
+        hours_elapsed = (simulated_time - SIMULATION_START_TIME).total_seconds() / 3600
+        hours_in_day = hours_elapsed % 24
+        simulated_time = SIMULATION_START_TIME + timedelta(hours=hours_in_day)
+    
+    return simulated_time.strftime("%Y-%m-%dT%H:%M:%S")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -42,7 +67,7 @@ app.add_middleware(
 
 # Initialize services
 data_service = DataService()
-prediction_service = PredictionService()
+prediction_service = PredictionService(data_service=data_service)
 autoscaling_service = AutoscalingService()
 
 @app.get("/")
@@ -69,13 +94,16 @@ async def health_check():
 
 @app.get("/api/current-traffic")
 async def get_current_traffic():
-    """Get current traffic load from historical data"""
+    """Get current traffic load from historical data (mapped to NASA 1995 test period)"""
     try:
-        current_time = datetime.now().isoformat()
-        current_traffic = prediction_service.get_current_traffic(current_time)
+        # Get simulated time (advances 1 minute every 5 real seconds)
+        current_time_1995 = get_simulated_time()
+        current_traffic = prediction_service.get_current_traffic(current_time_1995)
+        
+        logger.info(f"Current traffic at {current_time_1995}: {current_traffic:.2f} req/min")
         
         return JSONResponse({
-            "timestamp": current_time,
+            "timestamp": current_time_1995,
             "current_requests": round(current_traffic, 2)
         })
     except Exception as e:

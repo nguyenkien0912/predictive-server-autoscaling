@@ -133,6 +133,179 @@ Frontend sẽ chạy tại: **http://localhost:3000**
    - 💰 Cost analysis
    - ⚡ System utilization
 
+---
+
+## 🐳 Chạy với Docker (Khuyến nghị)
+
+### Yêu cầu
+
+- **Docker Desktop** (Windows/Mac) hoặc **Docker Engine** (Linux)
+- **Docker Compose** (thường đi kèm Docker Desktop)
+
+### Cài đặt Docker
+
+**Windows/Mac:**
+- Tải Docker Desktop: https://www.docker.com/products/docker-desktop
+- Cài đặt và khởi động Docker Desktop
+
+**Linux:**
+```bash
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install docker.io docker-compose
+
+# Start Docker
+sudo systemctl start docker
+sudo systemctl enable docker
+```
+
+### Chạy với Docker - Cách đơn giản nhất 🚀
+
+**Windows:**
+```powershell
+# Chỉ cần chạy 1 lệnh!
+docker-run.bat
+```
+
+**Linux/Mac:**
+```bash
+# Cấp quyền thực thi (chỉ cần 1 lần)
+chmod +x docker-run.sh
+
+# Chạy
+./docker-run.sh
+```
+
+Script sẽ tự động:
+- ✅ Kiểm tra Docker
+- ✅ Build containers (backend + frontend)
+- ✅ Start services
+- ✅ Mở browser tự động
+
+**Hệ thống sẽ chạy tại:**
+- 🌐 **Frontend Dashboard**: http://localhost
+- 🔧 **Backend API**: http://localhost:5000
+
+### Lệnh Docker nâng cao
+
+**Build và start containers:**
+```bash
+docker-compose up -d
+```
+
+**Build lại (sau khi thay đổi code):**
+```bash
+docker-compose up --build -d
+```
+
+**Xem logs:**
+```bash
+# Xem tất cả logs
+docker-compose logs -f
+
+# Xem logs của backend
+docker-compose logs -f backend
+
+# Xem logs của frontend
+docker-compose logs -f frontend
+```
+
+**Kiểm tra trạng thái containers:**
+```bash
+docker-compose ps
+```
+
+**Stop containers:**
+```bash
+# Dừng containers (giữ data)
+docker-compose stop
+
+# Hoặc dùng script
+docker-stop.bat        # Windows
+./docker-stop.sh       # Linux/Mac
+
+# Stop và xóa containers
+docker-compose down
+```
+
+**Restart containers:**
+```bash
+docker-compose restart
+```
+
+**Xem resource usage:**
+```bash
+docker stats
+```
+
+### Cấu trúc Docker
+
+```
+📁 predictive-server-autoscaling/
+├── 📄 docker-compose.yml           # Orchestration file
+├── 📄 docker-run.bat               # Windows run script
+├── 📄 docker-run.sh                # Linux/Mac run script
+├── 📄 docker-stop.bat              # Windows stop script
+├── 📄 docker-stop.sh               # Linux/Mac stop script
+│
+├── 📁 backend/
+│   ├── 📄 Dockerfile               # Backend container config
+│   └── 📄 .dockerignore            # Files to exclude
+│
+└── 📁 frontend/
+    ├── 📄 Dockerfile               # Frontend container config
+    ├── 📄 nginx.conf               # Nginx config for production
+    └── 📄 .dockerignore            # Files to exclude
+```
+
+### Troubleshooting Docker
+
+**❌ "Docker is not running"**
+```bash
+# Khởi động Docker Desktop (Windows/Mac)
+# Hoặc trên Linux:
+sudo systemctl start docker
+```
+
+**❌ "Port already in use"**
+```bash
+# Kiểm tra port đang dùng
+netstat -ano | findstr :5000    # Windows
+lsof -i :5000                   # Linux/Mac
+
+# Stop container đang chạy
+docker-compose down
+```
+
+**❌ Containers bị lỗi**
+```bash
+# Xem logs để debug
+docker-compose logs
+
+# Rebuild từ đầu
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+**❌ Thiếu dependencies**
+```bash
+# Xóa images cũ và rebuild
+docker-compose down --rmi all
+docker-compose up --build -d
+```
+
+### Ưu điểm của Docker
+
+✅ **Không cần cài Python/Node.js** trên máy host  
+✅ **Environment nhất quán** trên mọi hệ điều hành  
+✅ **Dễ dàng deploy** lên production  
+✅ **Tự động restart** khi có lỗi  
+✅ **Isolated** - không ảnh hưởng system  
+✅ **Scale dễ dàng** khi cần  
+
+---
+
 ## 📊 Tính năng Dashboard
 
 ### 🎯 Real-time Monitoring

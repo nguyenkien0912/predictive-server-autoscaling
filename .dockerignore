@@ -1,0 +1,53 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+LICENSE
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/*.so
+**/.Python
+**/venv/
+**/env/
+**/ENV/
+
+# Node
+**/node_modules/
+**/npm-debug.log*
+
+# Build outputs
+**/dist/
+**/build/
+
+# Jupyter
+**/*.ipynb
+**/.ipynb_checkpoints/
+
+# Test files
+**/tests/
+**/.pytest_cache/
+**/coverage/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docker
+docker-compose.override.yml

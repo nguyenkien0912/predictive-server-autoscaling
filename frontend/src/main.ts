@@ -84,8 +84,7 @@ class Dashboard {
       clearEventsBtn.addEventListener('click', () => this.clearEvents());
     }
 
-    // Update time every second
-    setInterval(() => this.updateCurrentTime(), 1000);
+    // Note: Time is now updated from backend in updateDashboard() every 5 seconds
   }
 
   /**
@@ -178,20 +177,26 @@ class Dashboard {
       if (!this.state.connected) return;
     }
 
+    const startTime = performance.now();
     try {
-      // Use timestamp from training data range (Aug 1995) instead of current date
-      const now = new Date();
-      const hour = now.getHours();
-      const minute = now.getMinutes();
-      const second = now.getSeconds();
-      // Map current time to August 1995 range (test period) 
-      const currentTime = `1995-08-25T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
-      
-      // Get current traffic from backend (using actual data from CSV)
+      // Get current traffic from backend (which has correct NASA 1995 timestamp)
       const trafficData = await apiService.getCurrentTraffic();
       this.state.currentRequests = trafficData.current_requests;
+      
+      // Use the SAME timestamp from backend for predictions (to avoid timezone mismatch)
+      const currentTime = trafficData.timestamp;
 
-      // Get predictions from backend (using real model with 1995 timestamp)
+      // Update NASA time display in header
+      const nasaTime = new Date(currentTime);
+      const timeDisplay = document.getElementById('current-time');
+      if (timeDisplay) {
+        timeDisplay.textContent = `NASA: ${nasaTime.toLocaleTimeString('vi-VN')}`;
+      }
+
+      // Log update for visibility
+      console.log(`🔄 [${new Date().toLocaleTimeString()}] Dashboard update started - Current: ${Math.round(this.state.currentRequests)} req/min`);
+
+      // Get predictions from backend (using SAME 1995 timestamp)
       const forecast = await apiService.getForecast(currentTime, [1, 5, 15]);
       
       // Update predictions display
@@ -201,6 +206,7 @@ class Dashboard {
       const prediction5m = forecast.predictions.find(p => p.interval_minutes === 5);
       if (prediction5m) {
         this.state.predictedRequests = prediction5m.predicted_requests;
+        console.log(`📊 Predicted (5min): ${Math.round(this.state.predictedRequests)} req/min`);
       }
 
       // Get scaling recommendation
@@ -237,8 +243,23 @@ class Dashboard {
       this.updateStats();
       this.state.lastUpdate = currentTime;
 
+      // Update last updated indicator
+      const lastUpdateEl = document.getElementById('last-update');
+      if (lastUpdateEl) {
+        const now = new Date();
+        lastUpdateEl.textContent = `Updated: ${now.toLocaleTimeString()}`;
+        lastUpdateEl.classList.add('pulse');
+        setTimeout(() => lastUpdateEl.classList.remove('pulse'), 500);
+      }
+
+      // Log performance
+      const duration = performance.now() - startTime;
+      console.log(`✅ Update completed in ${Math.round(duration)}ms`);
+
     } catch (error) {
       console.error('Dashboard update failed:', error);
+      const duration = performance.now() - startTime;
+      console.log(`❌ Update failed after ${Math.round(duration)}ms`);
     }
   }
 
@@ -290,12 +311,9 @@ class Dashboard {
    */
   private async updatePredictions(): Promise<void> {
     try {
-      // Use timestamp from training data range (Aug 1995)
-      const now = new Date();
-      const hour = now.getHours();
-      const minute = now.getMinutes();
-      const second = now.getSeconds();
-      const currentTime = `1995-08-25T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
+      // Get current traffic to get correct timestamp
+      const trafficData = await apiService.getCurrentTraffic();
+      const currentTime = trafficData.timestamp;
       
       const forecast = await apiService.getForecast(currentTime, [1, 5, 15]);
       this.updatePredictionsDisplay(forecast.predictions);
@@ -478,21 +496,20 @@ class Dashboard {
   /**
    * Update current time display
    */
-  private updateCurrentTime(): void {
-    const now = new Date();
-    const timeDisplay = document.getElementById('current-time');
-    if (timeDisplay) {
-      timeDisplay.textContent = now.toLocaleTimeString('vi-VN');
-    }
-  }
-
   /**
    * Helper to set element text
    */
   private setElementText(id: string, text: string): void {
     const element = document.getElementById(id);
     if (element) {
+      const oldText = element.textContent;
       element.textContent = text;
+      
+      // Add visual feedback if value changed
+      if (oldText !== text && element.classList.contains('stat-value')) {
+        element.classList.add('updated');
+        setTimeout(() => element.classList.remove('updated'), 300);
+      }
     }
   }
 

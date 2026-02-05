@@ -26,14 +26,24 @@ class DataService:
     def _load_data(self):
         """Load preprocessed data from parquet file"""
         try:
-            data_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'nasa_logs_processed.parquet')
+            # Try multiple possible data paths (Docker volume mount or local)
+            possible_paths = [
+                '/app/data/nasa_logs_processed.parquet',  # Docker volume mount
+                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'data', 'nasa_logs_processed.parquet'),  # Local dev
+            ]
             
-            if not os.path.exists(data_path):
-                logger.warning(f"Data file not found: {data_path}. Creating dummy data.")
+            data_path = None
+            for path in possible_paths:
+                if os.path.exists(path):
+                    data_path = path
+                    break
+            
+            if data_path is None:
+                logger.warning(f"Data file not found in any location. Creating dummy data.")
                 self._create_dummy_data()
                 return
             
-            logger.info("Loading data from parquet file...")
+            logger.info(f"Loading data from parquet file: {data_path}")
             df = pd.read_parquet(data_path)
             
             # Resample to different intervals
@@ -66,10 +76,10 @@ class DataService:
             return empty_df
     
     def _create_dummy_data(self):
-        """Create dummy data for testing"""
-        logger.info("Creating dummy data for testing...")
+        """Create dummy data for testing using NASA timeline (1995)"""
+        logger.info("Creating dummy data for testing (NASA 1995 timeline)...")
         
-        # Create date range
+        # Create date range matching NASA logs (July-August 1995)
         start_date = pd.Timestamp('1995-07-01')
         end_date = pd.Timestamp('1995-08-31')
         
@@ -78,25 +88,30 @@ class DataService:
         dates_5m = pd.date_range(start=start_date, end=end_date, freq='5min')
         dates_15m = pd.date_range(start=start_date, end=end_date, freq='15min')
         
-        # Generate dummy traffic data with daily and hourly patterns
+        # Generate dummy traffic data with daily and hourly patterns (realistic levels)
         def generate_traffic(dates):
-            np.random.seed(42)
             traffic = []
             for date in dates:
-                # Base load
-                base = 100
-                # Daily pattern (higher during weekdays)
-                daily = 50 if date.dayofweek < 5 else 30
-                # Hourly pattern (higher during business hours)
-                hourly = 80 * np.sin(np.pi * (date.hour - 6) / 12) if 6 <= date.hour <= 18 else 20
-                # Random noise
-                noise = np.random.normal(0, 20)
+                # Realistic base load (20-80 req/min range) based on hour
+                if 9 <= date.hour <= 17:  # Business hours
+                    base = 35 + 20 * np.sin(np.pi * (date.hour - 9) / 8)  # Peak ~55 req/min
+                elif 6 <= date.hour <= 22:  # Extended hours
+                    base = 25 + 10 * np.sin(np.pi * (date.hour - 6) / 16)  # ~25-35 req/min
+                else:  # Night
+                    base = 12 + 5 * np.sin(np.pi * date.hour / 12)  # ~12-17 req/min
                 
-                requests = max(0, base + daily + hourly + noise)
+                # Weekday vs weekend
+                if date.dayofweek >= 5:  # Weekend
+                    base *= 0.65
+                
+                # Small variation for realism
+                variation = np.random.uniform(-base * 0.1, base * 0.1)
+                
+                requests = max(5, base + variation)
                 traffic.append({
                     'requests': requests,
-                    'total_bytes': requests * np.random.uniform(1000, 50000),
-                    'errors': int(requests * 0.01)
+                    'total_bytes': requests * np.random.uniform(15000, 25000),
+                    'errors': int(requests * 0.005)
                 })
             return pd.DataFrame(traffic, index=dates)
         

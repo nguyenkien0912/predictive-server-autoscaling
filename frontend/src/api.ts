@@ -11,13 +11,26 @@ import type {
   CostSummary
 } from './types';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Auto-detect API URL based on environment
+// Development (Vite dev server on port 3000): use http://localhost:5000/api
+// Production/Docker (served by Nginx on port 80): use relative /api path
+const getApiBaseUrl = (): string => {
+  // Check if running on development port 3000
+  if (window.location.port === '3000') {
+    return 'http://localhost:5000/api';
+  }
+  // Production/Docker - use relative path (Nginx will proxy to backend)
+  return '/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ApiService {
   private baseUrl: string;
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
+    console.log(`API Base URL: ${this.baseUrl}`);
   }
 
   /**
