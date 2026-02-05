@@ -77,13 +77,10 @@ Hệ thống **Predictive Autoscaling** sử dụng Machine Learning để giả
 
 ## 📁 Cấu trúc dự án
 
-```
+
 predictive-server-autoscaling/
 │
-├── backend/                            # 🐍 Backend API Server
-│   ├── app.py                          # Main FastAPI application
-│   ├── prepare_data.py                 # Data preparation utilities
-│   ├── requirements.txt                # Python dependencies
+├── backend/                            # Backend API Server│   ├── requirements.txt                # Python dependencies
 │   ├── Dockerfile                      # Docker configuration
 │   ├── .dockerignore
 │   │
@@ -94,65 +91,61 @@ predictive-server-autoscaling/
 │   │
 │   └── services/                       # Business logic services
 │       ├── __init__.py
-│       ├── data_service.py             # Data loading and processing
+│       ├── data_service.py             # Data loading and 
 │       ├── prediction_service.py       # ML prediction service
 │       ├── autoscaling_service.py      # Autoscaling logic
 │       └── cost_tracker_service.py     # Cost tracking service
 │
-├── frontend/                           # 🎨 Frontend Dashboard
+├── frontend/                           # Frontend Dashboard
 │   ├── index.html                      # Main HTML file
 │   ├── package.json                    # Node.js dependencies
 │   ├── package-lock.json
-│   ├── tsconfig.json                   # TypeScript configuration
-│   ├── vite.config.ts                  # Vite build configuration
+│   ├── tsconfig.json                   # TypeScript 
+│   ├── vite.config.ts                  # Vite build 
 │   ├── Dockerfile                      # Docker configuration
-│   ├── nginx.conf                      # Nginx configuration for production
+│   ├── nginx.conf                      # Nginx configuration 
 │   ├── .dockerignore
 │   │
 │   └── src/                            # TypeScript source files
 │       ├── main.ts                     # Main application logic
 │       ├── api.ts                      # API client
 │       ├── charts.ts                   # Chart.js configurations
-│       ├── types.ts                    # TypeScript type definitions
+│       ├── types.ts                    # TypeScript type 
 │       └── styles/
 │           └── main.css                # Application styles
 │
-├── data/                               # 📊 Data Files
-│   ├── access_log_Jul95.txt            # NASA logs July 1995 (training)
-│   ├── access_log_Aug95.txt            # NASA logs August 1995 (test)
+├── data/                               # Data Files
+│   ├── access_log_Jul95.txt            # NASA logs July 1995 
+│   ├── access_log_Aug95.txt            # NASA logs August 1995 
 │   ├── nasa_logs_processed.parquet     # Processed data
 │   ├── best_model_lgbm_5m.pkl          # Trained LightGBM model
 │   ├── prediction_results_5m.csv       # Model predictions
 │   └── raw/                            # Raw data backup
 │
-├── 📓 Jupyter Notebooks
+├── notebooks/                          # Jupyter Notebooks
 │   ├── Data_Processing.ipynb           # Data parsing and EDA
 │   ├── Basic_Experiment.ipynb          # Initial experiments
 │   ├── Final_Solution.ipynb            # Final model training
-│   └── Autoscaling_Optimization.ipynb  # Autoscaling policy optimization
+│   └── Autoscaling_Optimization.ipynb  # Autoscaling policy 
 │
-├── 🐳 Docker Files
-│   ├── docker-compose.yml              # Docker Compose configuration
-│   ├── .dockerignore                   # Docker ignore rules
+├── docker-compose.yml                  # Docker Compose 
+├── .dockerignore                       # Docker ignore rules
 │
-├── 📜 Scripts
-│   ├── docker-run.bat                  # Windows: Start Docker containers
-│   ├── docker-run.sh                   # Linux/Mac: Start Docker containers
-│   ├── docker-stop.bat                 # Windows: Stop containers
-│   ├── docker-stop.sh                  # Linux/Mac: Stop containers
+├── scripts/                            # Utility Scripts
+│   ├── docker-run.bat                  # Windows: Start Docker 
+│   ├── docker-run.sh                   # Linux/Mac: Start Docker 
+│   ├── docker-stop.bat                 # Windows: Stop 
+│   ├── docker-stop.sh                  # Linux/Mac: Stop 
 │   ├── setup.bat                       # Windows: Setup script
-│   ├── start-backend.bat               # Windows: Start backend manually
-│   └── start-frontend.bat              # Windows: Start frontend manually
+│   ├── start-backend.bat               # Windows: Start backend 
+│   └── start-frontend.bat              # Windows: Start frontend 
 │
-├── 📝 Configuration Files
-│   ├── .env.example                    # Environment variables template
-│   ├── .gitignore                      # Git ignore rules
-│   ├── requirements.txt                # Root Python dependencies
-│   └── README.md                       # This file
-│
-└── 📄 Documentation
-    └── LICENSE                         # MIT License
-```
+├── .env.example                        # Environment variables template
+├── .gitignore                          # Git ignore rules
+├── requirements.txt                    # Root Python dependencies
+├── README.md                           # This file
+└── LICENSE                             # MIT License
+
 
 ---
 
