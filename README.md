@@ -745,18 +745,16 @@ Trả về full data cho dashboard: metrics, predictions, scaling events, config
 
 | Metric | Value | Ý nghĩa |
 |--------|-------|---------|
-| **MAE** | 4.5 req/min | Trung bình sai số 4.5 requests |
-| **RMSE** | 6.2 req/min | Root mean square error |
-| **R** | 0.88 | Giải thích 88% variance |
-| **Accuracy** | 90% | % predictions trong 10% actual |
+| **MAE** | 35.18 req/min | Trung bình sai số 35.18 requests |
+| **RMSE** | 46.74 req/min | Root mean square error |
 
 **Comparison across intervals:**
 
-| Interval | MAE | RMSE | R | Accuracy |
-|----------|-----|------|-----|----------|
-| 1 min | 2.3 | 3.1 | 0.92 | 94% |
-| 5 min | 4.5 | 6.2 | 0.88 | 90% |
-| 15 min | 8.1 | 11.3 | 0.78 | 80% |
+| Interval | MAE | RMSE |
+|----------|-----|------|
+| 1 min | 10.84 | 14.27 |
+| 5 min | 35.18 | 46.74 |
+| 15 min | 82.95 | 114.24 |
 
 ### Jupyter Notebooks
 
